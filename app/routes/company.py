@@ -34,7 +34,7 @@ def get_companies(skip: int = 0, limit: int = 10, db: Session = Depends(getDb)):
     status_code=200
 )
 def get_company(company_id: int, db: Session = Depends(getDb)):
-    company = crud_company.get_companies(db, company_id)
+    company = crud_company.get_company(db, company_id)
     if not company:
         raise HTTPException(status_code=404, detail="Company not found")
     return company
