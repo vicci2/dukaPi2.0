@@ -9,7 +9,6 @@ company_router = APIRouter()
 @company_router.post(
     "/", 
     response_model=Company, 
-    tags=["Companies"], 
     summary="Create a new company (Admin only)", 
     status_code=201
 )
@@ -19,7 +18,6 @@ def create_company(company: CompanyCreate, db: Session = Depends(getDb)):
 @company_router.get(
     "/", 
     response_model=list[Company], 
-    tags=["Companies"], 
     summary="Retrieve a list of companies", 
     status_code=200
 )
@@ -29,7 +27,6 @@ def get_companies(skip: int = 0, limit: int = 10, db: Session = Depends(getDb)):
 @company_router.get(
     "/{company_id}", 
     response_model=Company, 
-    tags=["Companies"], 
     summary="Retrieve a specific company by ID", 
     status_code=200
 )

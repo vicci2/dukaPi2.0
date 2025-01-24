@@ -9,7 +9,6 @@ subscription_router = APIRouter()
 @subscription_router.post(
     "/", 
     response_model=Subscription, 
-    tags=["Subscriptions"], 
     summary="Create a new subscription (Admin only)", 
     status_code=201
 )
@@ -19,7 +18,6 @@ def create_subscription(subscription: SubscriptionCreate, db: Session = Depends(
 @subscription_router.get(
     "/", 
     response_model=list[Subscription], 
-    tags=["Subscriptions"], 
     summary="Retrieve a list of subscriptions", 
     status_code=200
 )
@@ -29,7 +27,6 @@ def get_subscriptions(skip: int = 0, limit: int = 10, db: Session = Depends(getD
 @subscription_router.get(
     "/{subscription_id}", 
     response_model=Subscription, 
-    tags=["Subscriptions"], 
     summary="Retrieve a specific subscription by ID", 
     status_code=200
 )
