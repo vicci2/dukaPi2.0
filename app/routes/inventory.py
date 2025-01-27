@@ -2,7 +2,8 @@ from typing import List
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from app.db import getDb
-from app.schemas.inventory import InventoryAdjust, InventoryCreate, InventoryResponse
+from app.models.inventory import Inventory
+from app.schemas.inventory import InventoryAdjust, InventoryCreate, InventoryResponse, InventoryUpdate
 from app.crud import inventory as crud_inventory
 
 inventory_router = APIRouter()
@@ -19,6 +20,7 @@ def get_inventories(skip: int = 0, limit: int = 10, db: Session = Depends(getDb)
     """
     return crud_inventory.get_all_inventories(db, skip, limit)
 
+# Retrieve a single inventory record
 @inventory_router.get(
     "/{id}",
     response_model=InventoryResponse,
@@ -30,6 +32,32 @@ def get_inventory(id: int, db: Session = Depends(getDb)):
     Retrieve details of a single inventory record by its ID.
     """
     return crud_inventory.get_inventory_by_id(db, id)
+
+# Update an existing inventory record
+@inventory_router.put(
+    "/{id}",
+    response_model=InventoryResponse,
+    summary="Update an existing inventory record (Admin Or Manager only)",
+    status_code=200
+)
+def update_inventory(id: int, payload: InventoryUpdate, db: Session = Depends(getDb)):
+    """
+    Update an existing inventory record by its ID.
+    """
+    return crud_inventory.update_inventory(db, id, payload)
+
+# Delete an inventory record
+@inventory_router.delete(
+    "/{id}",
+    response_model=dict,
+    summary="Delete an inventory record (Admin only)",
+    status_code=200
+)
+def delete_inventory(id: int, db: Session = Depends(getDb)):
+    """
+    Delete an inventory record by its ID.
+    """
+    return crud_inventory.delete_inventory(db, id)
 
 # Manage inventory (Create or Update)
 @inventory_router.post(

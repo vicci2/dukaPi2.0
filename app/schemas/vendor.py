@@ -12,7 +12,7 @@ class VendorBase(BaseModel):
     status: Optional[str] = Field(default="Completed", example="Active", description="Vendor's status")
 
 class VendorCreate(VendorBase):
-    password: str = Field(..., example="strongpassword123", description="Password for the vendor account")
+    password_hash: str = Field(..., example="strongpassword123", description="Password for the vendor account")
 
 class VendorUpdate(BaseModel):
     name: Optional[str] = Field(None, description="Updated name of the vendor")

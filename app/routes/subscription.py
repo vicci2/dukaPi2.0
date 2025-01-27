@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from app.db import getDb
-from app.schemas.subscription import Subscription, SubscriptionCreate
+from app.schemas.subscription import Subscription, SubscriptionCreate, SubscriptionUpdate
 from app.crud import subscription as crud_subscription
 
 subscription_router = APIRouter()
@@ -35,3 +35,37 @@ def get_subscription(subscription_id: int, db: Session = Depends(getDb)):
     if not subscription:
         raise HTTPException(status_code=404, detail="Subscription not found")
     return subscription
+
+@subscription_router.put(
+    "/{subscription_id}",
+    response_model=Subscription,
+    summary="Update a subscription (Admin only)",
+    status_code=200,
+)
+def update_subscription(
+    subscription_id: int,
+    payload: SubscriptionUpdate,
+    db: Session = Depends(getDb)
+):
+    """
+    Update a subscription by ID. You can update the tier, transaction code, and other optional fields.
+    """
+    updated_subscription = crud_subscription.update_subscription(db, subscription_id, payload)
+    return updated_subscription
+
+@subscription_router.put(
+    "/{subscription_id}/cancel",
+    response_model=Subscription,
+    summary="Cancel a subscription (Admin only)",
+    status_code=200,
+)
+def cancel_subscription(
+    subscription_id: int,
+    db: Session = Depends(getDb)
+):
+    """
+    Mark a subscription as canceled without deleting it. 
+    This ensures that subscription history is kept intact.
+    """
+    canceled_subscription = crud_subscription.cancel_subscription(db, subscription_id)
+    return canceled_subscription

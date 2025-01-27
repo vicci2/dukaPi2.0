@@ -12,13 +12,13 @@ class TierCreate(TierBase):
 
 # Schema for updating a tier
 class TierUpdate(BaseModel):
-    name: Optional[str] = Field(None, example="Enterprise")  # Allow updating the name
-    description: Optional[str] = Field(None, example="Updated description for Enterprise tier.")  # Allow updating description
-    amount: Optional[float] = Field(None, example=99.99)  # Allow updating price
+    name: Optional[str] = Field(None, example="Enterprise") 
+    description: Optional[str] = Field(None, example="Updated description for Enterprise tier.")  
+    amount: Optional[float] = Field(None, example=99.99)  
+    
 # Schema for tier responses
 class Tier(TierBase):
-    id: int = Field(..., example=1)  #Unique tier ID
-
+    
     class Config:
         from_attributes = True
 

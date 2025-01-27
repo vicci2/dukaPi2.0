@@ -1,4 +1,4 @@
-from sqlalchemy import Column, ForeignKey, Integer, Numeric, String, DateTime, Text, func
+from sqlalchemy import Column, ForeignKey, Index, Integer, Numeric, String, DateTime, Text, func
 from sqlalchemy.orm import relationship
 from app.db import Base
 
@@ -12,7 +12,6 @@ class Product(Base):
     product_name = Column(String, nullable=False, unique=True)
     image = Column(String, nullable=True)
     category = Column(String, nullable=True)
-    supplier = Column(String, nullable=True)
     desc = Column(Text, nullable=False, comment="Detailed product description")
     quantity = Column(Numeric, nullable=False, comment="Stock quantity available")
     b_p = Column(Numeric, nullable=False, comment="Base price of the product")
@@ -23,3 +22,8 @@ class Product(Base):
     vendor = relationship("Vendor", back_populates="product") 
     inventory = relationship("Inventory", back_populates="product")
     company = relationship("Company", back_populates="product")  
+
+# Index for optimized lookup
+    __table_args__ = (
+        Index('ix_company_product', 'company_id', 'product_name', unique=True),
+    )

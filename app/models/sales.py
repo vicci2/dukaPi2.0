@@ -1,11 +1,18 @@
 # This file is used to scalulpt the Sales Model/Table in the system Database:
 
+from enum import Enum
 from sqlalchemy import Column, Integer, String, Numeric, DateTime, ForeignKey, func
 from sqlalchemy.orm import relationship
 
 # We need to make sure that this model also meets our set specs in the db.base file Base class..... si:
 from app.db import Base
 
+
+class SaleStatus(str, Enum):
+    COMPLETED = "Completed"
+    PENDING = "Pending"
+    CANCELLED = "Cancelled"
+    
 # The Sales Model:
 class Sale(Base):
     # attaching a prefered tablename:
@@ -19,7 +26,9 @@ class Sale(Base):
     selling_price = Column(Numeric, nullable=False, comment="Selling price during sale")
     last_updated = Column(DateTime(timezone=False), server_default=func.now())
     sale_date = Column(DateTime(timezone=False), server_default=func.now())
-    status = Column(String, nullable=False, default='Completed', comment="Sale status")
+    status = Column(String, nullable=False, default='Completed', 
+    comment="Sale status")
+    # status = Column(String, nullable=False, default=SaleStatus.PENDING)
 
     # Relationships
     inventory = relationship("Inventory", back_populates="sales") 

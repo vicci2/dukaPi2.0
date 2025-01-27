@@ -2,6 +2,7 @@ from typing import List
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from app.db import getDb
+from app.models.company import Company
 from app.schemas.vendor import VendorCreate, VendorUpdate, VendorResponse
 from app.crud import vendor as crud_vendor
 
@@ -44,6 +45,14 @@ def create_vendor(vendor_create: VendorCreate, db: Session = Depends(getDb)):
     """
     Create a new vendor in the system.
     """
+    # Check if company exists
+    company = db.query(Company).filter(Company.id == vendor_create.company_id).first()
+    if not company:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Company with ID {vendor_create.company_id} does not exist."
+        )
+    
     return crud_vendor.create_vendor(db, vendor_create)
 
 # Update an existing vendor

@@ -4,11 +4,11 @@ from decimal import Decimal
 from datetime import datetime
 
 class SalesBase(BaseModel):
+    company_id: int = Field(..., example=1, description="ID of the copmpany selling the item")
     inventory_id: int = Field(..., example=1, description="ID of the inventory item being sold")
     quantity: Decimal = Field(..., ge=1, example=10, description="Quantity of the product being sold")
     selling_price: Decimal = Field(..., ge=0.0, example=50.00, description="Selling price per unit")
     base_price: Optional[Decimal] = Field(None, example=40.00, description="Base price during the sale")
-    sale_date: Optional[datetime] = Field(default_factory=datetime.utcnow, example="2024-01-01T12:00:00")
     status: Optional[str] = Field(default="Completed", example="Completed", description="Status of the sale")
 
 class SalesCreate(SalesBase):

@@ -12,13 +12,12 @@ class SubscriptionCreate(SubscriptionBase):
     pass
 
 class SubscriptionUpdate(BaseModel):
-    company_id: Optional[int] = Field(None, example=1)  # Allow updating company ID
-    tier_id: Optional[int] = Field(None, example=2)  # Allow updating tier ID
+    company_id: Optional[int] = Field(None, example=1)  
+    tier_id: Optional[int] = Field(None, example=2) 
     transaction_code: Optional[str] = Field(None, example="TX67890DEF")  # Allow updating transaction code
 
 # Schema for subscription responses
 class Subscription(SubscriptionBase):
-    id: int = Field(..., example=101)  # Example: Unique subscription ID
     created_at: Optional[datetime] = Field(None, example="2025-01-01T12:00:00")  # Example: Timestamp of creation
 
     class Config:

@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from typing import List
 from sqlalchemy.orm import Session
 from app.db import getDb
-from app.schemas.product import ProductBase, ProductCreate, ProductResponse
+from app.schemas.product import ProductBase, ProductCreate, ProductUpdate, ProductResponse
 from app.crud import products as crud_product
 
 product_router = APIRouter()
@@ -10,11 +10,14 @@ product_router = APIRouter()
 # Retrieve all products
 @product_router.get(
     "/",
-    response_model=List[ProductBase],
+    response_model=List[ProductResponse],
     summary="Get all stocked items (Admin or Manager only)",
     status_code=200,
 )
 def get_products(skip: int = 0, limit: int = 100, db: Session = Depends(getDb)):
+    """
+    Retrieve all products with pagination.
+    """
     return crud_product.get_all_products(db, skip, limit)
 
 # Retrieve a product by ID
@@ -25,6 +28,9 @@ def get_products(skip: int = 0, limit: int = 100, db: Session = Depends(getDb)):
     status_code=200,
 )
 def get_product(id: int, db: Session = Depends(getDb)):
+    """
+    Retrieve a product by its ID.
+    """
     return crud_product.get_product_by_id(db, id)
 
 # Create a new product
@@ -35,14 +41,33 @@ def get_product(id: int, db: Session = Depends(getDb)):
     status_code=201,
 )
 def create_product(payload: ProductCreate, db: Session = Depends(getDb)):
-    if crud_product.is_product_name_exists(db, payload.product_name):
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Product with name '{payload.product_name}' already exists.",
-        )
-    if payload.quantity <= 0:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Product quantity must be greater than 0.",
-        )
+    """
+    Add a new product to the database.
+    """
     return crud_product.create_product(db, payload)
+
+# Update an existing product
+@product_router.put(
+    "/{id}",
+    response_model=ProductResponse,
+    summary="Update an existing product (Admin or Manager only)",
+    status_code=200,
+)
+def update_product(id: int, payload: ProductUpdate, db: Session = Depends(getDb)):
+    """
+    Update product details by ID.
+    """
+    return crud_product.update_product(db, id, payload)
+
+# Delete a product
+@product_router.delete(
+    "/{id}",
+    response_model=dict,
+    summary="Delete a stocked item (Admin only)",
+    status_code=200,
+)
+def delete_product(id: int, force: bool = False, db: Session = Depends(getDb)):
+    """
+    Delete a product by its ID, optionally forcing deletion if stock exists.
+    """
+    return crud_product.delete_product(db, id, force)
