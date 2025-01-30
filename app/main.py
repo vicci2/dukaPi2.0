@@ -6,9 +6,11 @@ from .routes.api import router
 from .db import Base, engine
 
 # table creation on startup
-# from .models.inventory import Inventory
-# from .models.sales import Sale
-# from .models.vendors import Vendor
+from .models.inventory import Inventory
+from .models.sales import Sale
+from .models.vendors import Vendor
+from .models.payments import Payment
+
 Base.metadata.create_all(bind=engine)
 
 # instance of the fastAPI class

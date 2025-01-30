@@ -14,10 +14,12 @@ def get_product_by_id(db: Session, product_id: int) -> Product:
             detail=f"Product with ID {product_id} not found."
         )
     return product
+    # db.query(Product).filter().offset(skip).limit(limit).all()
 
 # Retrieve all products
 def get_all_products(db: Session, skip: int = 0, limit: int = 100):
-    return db.query(Product).offset(skip).limit(limit).all()
+    return db.query(Product).filter().offset(skip).limit(limit).all()
+    # return db.query(Product).filter().offset(skip).limit(limit).all()
 
 # Create a new product
 def create_product(db: Session, product: ProductCreate):

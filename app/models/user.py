@@ -15,8 +15,7 @@ class UserRole(str, enum.Enum):
 class User(Base):
     __tablename__ = "users"
 
-    id = Column(Integer, primary_key=True, index=True)
-    # id = Column(String, primary_key=True, index=True, default=lambda: str(uuid.uuid4()))  
+    id = Column(String, primary_key=True, index=True, default=lambda: str(uuid.uuid4()))  
     company_id = Column(Integer, ForeignKey("companies.id"))
     username = Column(String, unique=True, nullable=False)
     name = Column(String, nullable=True)

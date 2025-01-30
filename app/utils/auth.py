@@ -1,13 +1,17 @@
+from fastapi import Depends,  APIRouter, HTTPException, status
+from fastapi.security import OAuth2PasswordBearer
+from sqlalchemy.orm import Session
 from bcrypt import hashpw, gensalt, checkpw # type: ignore
 from jose import JWTError, jwt # type: ignore
+from app.models.user import User
 from datetime import datetime, timedelta
 
-# Configuration
+# JWT and OAuth2 configuration
 SECRET_KEY = "671df52ff4762004db68f6b0aff77fb4cf0752103d80555472109826b60dfa8569"
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
-# JWT Token Handling
+# JWT Utility Function
 def create_access_token(data: dict) -> str:
     to_encode = data.copy()
     expire = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)

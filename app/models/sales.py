@@ -32,5 +32,7 @@ class Sale(Base):
 
     # Relationships
     inventory = relationship("Inventory", back_populates="sales") 
-    company = relationship("Company", back_populates="sales")   
+    company = relationship("Company", back_populates="sales")  
+    payment = relationship("Payment", back_populates="sales")
+ 
 
