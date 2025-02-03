@@ -9,6 +9,7 @@ class RegisterRequest(BaseModel):
     password: str = Field(..., example="securePassword123")
     tel_no: str = Field(..., example="123-456-7890")
     avatar: Optional[str] = Field(None, example="https://example.com/avatar.jpg")
+    role: str = Field(..., example="user")
 
 class LoginRequest(BaseModel):
     username: str = Field(..., example="doe_joe")

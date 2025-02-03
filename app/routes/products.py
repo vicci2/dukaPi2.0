@@ -1,9 +1,11 @@
-from fastapi import APIRouter, Depends, HTTPException, status
-from typing import List
+from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
+from typing import List, Optional
 from sqlalchemy.orm import Session
 from app.db import getDb
+from app.dependencies.auth import get_current_user, get_current_user_with_role
 from app.schemas.product import ProductBase, ProductCreate, ProductUpdate, ProductResponse
 from app.crud import products as crud_product
+from app.schemas.user import User
 
 product_router = APIRouter()
 
@@ -14,11 +16,11 @@ product_router = APIRouter()
     summary="Get all stocked items (Admin or Manager only)",
     status_code=200,
 )
-def get_products(skip: int = 0, limit: int = 100, db: Session = Depends(getDb)):
+def get_products(skip: int = 0, limit: int = 100, db: Session = Depends(getDb),current_user: User = Depends(get_current_user_with_role("admin"))):
     """
     Retrieve all products with pagination.
     """
-    return crud_product.get_all_products(db, skip, limit)
+    return crud_product.get_all_products(db, skip, limit, current_user)
 
 # Retrieve a product by ID
 @product_router.get(
@@ -40,11 +42,11 @@ def get_product(id: int, db: Session = Depends(getDb)):
     summary="Add a new stocked item (Admin or Supplier only)",
     status_code=201,
 )
-def create_product(payload: ProductCreate, db: Session = Depends(getDb)):
+def create_product(payload: ProductCreate, image: Optional[UploadFile] = File(None), db: Session = Depends(getDb)):
     """
     Add a new product to the database.
     """
-    return crud_product.create_product(db, payload)
+    return crud_product.create_product(db, payload, image)
 
 # Update an existing product
 @product_router.put(

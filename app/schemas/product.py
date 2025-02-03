@@ -1,3 +1,4 @@
+from fastapi import File, UploadFile
 from pydantic import BaseModel, Field
 from typing import Optional
 from datetime import datetime
@@ -7,9 +8,7 @@ class ProductBase(BaseModel):
     company_id: int = Field(..., example=1)
     vendor_id: int = Field(..., example=109)
     serial_no: str = Field(..., example="12345-ABC")
-    # serial_no: str = Field(..., example="12345-ABC", regex=r'^\d{5}-[A-Z]{3}$')
-    product_name: str = Field(..., example="Laptop")
-    image: Optional[str] = Field(None, example="https://example.com/laptop.jpg")
+    product_name: str = Field(..., example="Laptop")    
     category: Optional[str] = Field(None, example="Electronics")
     desc: str = Field(..., example="A high-performance laptop for gaming and work.")
     quantity: int = Field(..., ge=0, example=100) 
@@ -17,7 +16,7 @@ class ProductBase(BaseModel):
 
 # Schema for creating a product
 class ProductCreate(ProductBase):
-    pass  
+    image: Optional[UploadFile] = File(None)  
 
 # Schema for updating a product
 class ProductUpdate(BaseModel):

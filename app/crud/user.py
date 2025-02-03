@@ -1,8 +1,7 @@
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
-from app.models.user import User, UserRole
+from app.models.user import User
 from app.schemas.tier import TierUpdate
-from app.schemas.user import UserCreate
 
 def get_users(db: Session, skip: int = 0, limit: int = 10):
     return db.query(User).offset(skip).limit(limit).all()

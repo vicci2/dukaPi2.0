@@ -25,7 +25,7 @@ def create_user(db: Session, user: RegisterRequest):
             tel_no=user.tel_no,
             avatar=user.avatar,
             password_hash=hashed_password,
-            role=UserRole.user,  # Default to "user" role
+            role= user.role,  # Default to "user" role
             company_id=user.company_id
         )
         db.add(new_user)

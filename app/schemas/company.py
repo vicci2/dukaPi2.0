@@ -21,7 +21,7 @@ class CompanyUpdate(BaseModel):
 
 # Schema for company responses
 class Company(CompanyBase):
-    # id: int = Field(..., example=1) 
+    id: int = Field(..., example=1) 
 
     class Config:
         from_attributes = True

@@ -76,7 +76,7 @@ def manage_inventory(db: Session, payload: InventoryCreate):
     # Fetch product by ID and serial number
     product = db.query(Product).filter(
         Product.id == payload.product_id,
-        Product.serial_no == payload.serial_no,
+        # Product.serial_no == payload.serial_no,
     ).first()
 
     if not product:

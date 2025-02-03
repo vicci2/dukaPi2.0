@@ -13,30 +13,56 @@ def get_vendor_by_id(db: Session, vendor_id: int) -> Vendor:
         )
     return vendor
 
+# Helper function to check if a record exists (optional, for reuse)
+def record_exists(db: Session, model, **filters) -> bool:
+    return db.query(model).filter_by(**filters).first() is not None
+
 # Retrieve all vendors
 def get_all_vendors(db: Session, skip: int = 0, limit: int = 10):
     return db.query(Vendor).offset(skip).limit(limit).all()
 
 # Create a new vendor
 def create_vendor(db: Session, vendor_create: VendorCreate):
-    db_vendor = Vendor(**vendor_create.dict())
-    db.add(db_vendor)
-    db.commit()
-    db.refresh(db_vendor)
-    return db_vendor
+    # Optionally, check for uniqueness or required conditions here
+    new_vendor = Vendor(**vendor_create.dict())
+    db.add(new_vendor)
+    try:
+        db.commit()
+        db.refresh(new_vendor)
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to create vendor: {str(e)}"
+        )
+    return new_vendor
 
 # Update an existing vendor
 def update_vendor(db: Session, vendor_id: int, vendor_update: VendorUpdate):
     db_vendor = get_vendor_by_id(db, vendor_id)
     for key, value in vendor_update.dict(exclude_unset=True).items():
         setattr(db_vendor, key, value)
-    db.commit()
-    db.refresh(db_vendor)
+    try:
+        db.commit()
+        db.refresh(db_vendor)
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to update vendor: {str(e)}"
+        )
     return db_vendor
 
 # Delete a vendor
 def delete_vendor(db: Session, vendor_id: int):
     db_vendor = get_vendor_by_id(db, vendor_id)
-    db.delete(db_vendor)
-    db.commit()
-    return db_vendor
+    try:
+        db.delete(db_vendor)
+        db.commit()
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to delete vendor: {str(e)}"
+        )
+    return {"message": f"Vendor with ID {vendor_id} successfully deleted."}
