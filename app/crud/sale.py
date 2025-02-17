@@ -43,6 +43,13 @@ def create_sale(db: Session, payload: SalesCreate) -> Sale:
     company = get_company_by_id(db, payload.company_id)
     inventory_item = get_inventory_by_id(db, payload.inventory_id)
 
+    # Validate Company
+    if not company:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Company with ID {payload.company_id} does not exist."
+        )
+   
     # Validate inventory stock
     if inventory_item.quantity < payload.quantity:
         raise HTTPException(

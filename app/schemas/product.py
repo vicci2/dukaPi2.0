@@ -13,10 +13,12 @@ class ProductBase(BaseModel):
     desc: str = Field(..., example="A high-performance laptop for gaming and work.")
     quantity: int = Field(..., ge=0, example=100) 
     b_p: float = Field(..., ge=0.0, example=500.00)  
+    image: Optional[str] = Field(None, example="https://example.com/avatar.jpg")
 
 # Schema for creating a product
 class ProductCreate(ProductBase):
-    image: Optional[UploadFile] = File(None)  
+    pass
+    # image: Optional[UploadFile] = File(None)  
 
 # Schema for updating a product
 class ProductUpdate(BaseModel):
@@ -28,8 +30,11 @@ class ProductUpdate(BaseModel):
 
 # Schema for product availability (quantity)
 class ProductAvail(BaseModel):
-    id: int
-    quantity: int
+    company_id: int = Field(..., example=109, description="ID of the related company")
+    quantity: int = Field(..., ge=0, example=50, description="Stock quantity to avail")
+    base_price: float = Field(..., ge=0.0, example=100.00, description="Base price of the product")
+    serial_no: str = Field(..., example="12345-ABC", description="Unique identifier for the inventory item")
+
 
 # Schema for deleting a product
 class ProductDel(BaseModel):

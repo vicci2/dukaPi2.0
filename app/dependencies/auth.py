@@ -14,7 +14,7 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
     try:
         # Decode the token
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        print(f"Decoded payload: {payload}")  # Debugging: Check the decoded token payload
+        # print(f"Decoded payload: {payload}")  # Debugging: Check the decoded token payload
         
         user_id = payload.get("sub")  # Extract user ID from the token payload
         if not user_id:
@@ -35,6 +35,8 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
 
         # Debugging: Only print after ensuring the user is valid
         # print(f"User ID from token: {user_id}\nUser found in DB: {user}")
+        # print(f"Authenticated User: {user}")  
+        # print(f"User's Company ID: {user.company_id}") 
 
         return user
 

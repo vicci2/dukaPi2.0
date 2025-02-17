@@ -3,7 +3,8 @@ from typing import List, Optional
 from sqlalchemy.orm import Session
 from app.db import getDb
 from app.dependencies.auth import get_current_user, get_current_user_with_role
-from app.schemas.product import ProductBase, ProductCreate, ProductUpdate, ProductResponse
+from app.schemas.inventory import InventoryCreate, InventoryResponse
+from app.schemas.product import ProductAvail, ProductBase, ProductCreate, ProductUpdate, ProductResponse
 from app.crud import products as crud_product
 from app.schemas.user import User
 
@@ -16,7 +17,7 @@ product_router = APIRouter()
     summary="Get all stocked items (Admin or Manager only)",
     status_code=200,
 )
-def get_products(skip: int = 0, limit: int = 100, db: Session = Depends(getDb),current_user: User = Depends(get_current_user_with_role("admin"))):
+def get_products(skip: int = 0, limit: int = 100, db: Session = Depends(getDb),current_user: User = Depends(get_current_user_with_role("admin", "manager"))):
     """
     Retrieve all products with pagination.
     """
@@ -42,11 +43,12 @@ def get_product(id: int, db: Session = Depends(getDb)):
     summary="Add a new stocked item (Admin or Supplier only)",
     status_code=201,
 )
-def create_product(payload: ProductCreate, image: Optional[UploadFile] = File(None), db: Session = Depends(getDb)):
+# def create_product(payload: ProductCreate, image: Optional[UploadFile] = File(None), db: Session = Depends(getDb)):
+def create_product(payload: ProductCreate, db: Session = Depends(getDb)):
     """
     Add a new product to the database.
     """
-    return crud_product.create_product(db, payload, image)
+    return crud_product.create_product(db, payload)
 
 # Update an existing product
 @product_router.put(
@@ -61,6 +63,19 @@ def update_product(id: int, payload: ProductUpdate, db: Session = Depends(getDb)
     """
     return crud_product.update_product(db, id, payload)
 
+# Manage inventory (Create or Update)
+@product_router.post(
+    "/{id}",
+    response_model=ProductAvail,
+    summary="Avail or Update inventory record (Admin only)",
+    status_code=201,
+)
+def avail(id: int, payload: ProductAvail, db: Session = Depends(getDb)):
+    """
+    Create or update inventory record and handle stock adjustments.
+    """
+    return crud_product.avail(id, db, payload)
+
 # Delete a product
 @product_router.delete(
     "/{id}",
@@ -68,8 +83,8 @@ def update_product(id: int, payload: ProductUpdate, db: Session = Depends(getDb)
     summary="Delete a stocked item (Admin only)",
     status_code=200,
 )
-def delete_product(id: int, force: bool = False, db: Session = Depends(getDb)):
+def delete_product(id: int, db: Session = Depends(getDb)):
     """
     Delete a product by its ID, optionally forcing deletion if stock exists.
     """
-    return crud_product.delete_product(db, id, force)
+    return crud_product.delete_product(db, id)

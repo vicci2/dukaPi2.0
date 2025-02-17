@@ -26,10 +26,13 @@ def login_user(
 ):
   return crud_auth.login_user(db, payload.username, payload.password)
 
-# @auth_router.get("/me")
-# def get_me(current_user: User = Depends(get_current_user)):
-#     return {"user_id": current_user.id, "username": current_user.username, "role": current_user.role}
+@auth_router.get("/me", response_model=User)
+def get_me(db: Session = Depends(getDb), current_user: User = Depends(get_current_user)):
+    """
+    Returns details of the logged-in user.
+    """
+    return current_user
 
-# @auth_router.get("/admin")
-# def admin_only(current_user: User = Depends(get_current_user_with_role("admin"))):
-#     return {"message": "Welcome, admin!"}
+@auth_router.get("/admin")
+def admin_only(current_user: User = Depends(get_current_user_with_role("admin"))):
+    return current_user

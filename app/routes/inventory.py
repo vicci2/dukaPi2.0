@@ -2,9 +2,12 @@ from typing import List
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from app.db import getDb
+from app.dependencies.auth import get_current_user, get_current_user_with_role
 from app.models.inventory import Inventory
-from app.schemas.inventory import InventoryAdjust, InventoryCreate, InventoryResponse, InventoryUpdate
+from app.models.user import User
+from app.schemas.inventory import InventoryAdjust, InventoryCreate, InventoryResponse, InventoryUpdate, Item
 from app.crud import inventory as crud_inventory
+from app.schemas.product import ProductAvail
 
 inventory_router = APIRouter()
 
@@ -14,7 +17,7 @@ inventory_router = APIRouter()
     summary="Retrieve all inventory records (Anyone but supplier)",
     status_code=200,
 )
-def get_inventories(skip: int = 0, limit: int = 10, db: Session = Depends(getDb)):
+def get_inventories(skip: int = 0, limit: int = 10, db: Session = Depends(getDb), current_user: User = Depends(get_current_user_with_role("admin", "manager", "staff"))):
     """
     Retrieve a list of inventory records with pagination.
     """
@@ -23,7 +26,7 @@ def get_inventories(skip: int = 0, limit: int = 10, db: Session = Depends(getDb)
 # Retrieve a single inventory record
 @inventory_router.get(
     "/{id}",
-    response_model=InventoryResponse,
+    response_model=Item,
     summary="Retrieve a single inventory record",
     status_code=200,
 )
@@ -59,19 +62,6 @@ def delete_inventory(id: int, db: Session = Depends(getDb)):
     """
     return crud_inventory.delete_inventory(db, id)
 
-# Manage inventory (Create or Update)
-@inventory_router.post(
-    "/",
-    response_model=InventoryResponse,
-    summary="Create or Update inventory record (Admin only)",
-    status_code=201,
-)
-def manage_inventory(payload: InventoryCreate, db: Session = Depends(getDb)):
-    """
-    Create or update inventory record and handle stock adjustments.
-    """
-    return crud_inventory.manage_inventory(db, payload)
-
 # Restock product from inventory
 @inventory_router.post(
     "/{id}/restock",
@@ -88,7 +78,7 @@ def restock_product(id: int, quantity: int, db: Session = Depends(getDb)):
 # Adjust inventory (increase stock levels)
 @inventory_router.patch(
     "/{id}/increase",
-    response_model=InventoryResponse,
+    response_model= ProductAvail,
     summary="Increase inventory stock levels (Admin or Manager only)",
     status_code=200,
 )
@@ -101,7 +91,7 @@ def increase_inventory(id: int, payload: InventoryAdjust, db: Session = Depends(
 # Force reduce inventory (decrease stock levels)
 @inventory_router.patch(
     "/{id}/reduce",
-    response_model=InventoryResponse,
+    response_model= ProductAvail,
     summary="Force reduce inventory stock levels (Admin or Manager only)",
     status_code=200,
 )

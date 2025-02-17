@@ -47,7 +47,7 @@ def create_subscription(db: Session, subscription: SubscriptionCreate):
 def get_subscriptions(db: Session, skip: int = 0, limit: int = 10):
     total = db.query(Subscription).count()
     subscriptions = db.query(Subscription).offset(skip).limit(limit).all()
-    return {"total": total, "skip": skip, "limit": limit, "data": subscriptions}
+    return subscriptions
 
 def get_subscription(db: Session, subscription_id: int):
     return db.query(Subscription).filter(Subscription.id == subscription_id).first()

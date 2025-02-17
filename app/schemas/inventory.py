@@ -20,10 +20,36 @@ class InventoryUpdate(BaseModel):
 class InventoryAdjust(BaseModel):
     adjustment: int = Field(..., description="Adjustment to stock quantity, positive or negative")
 
-class InventoryResponse(InventoryBase):
-    id: int = Field(..., example=1, description="Unique identifier for the inventory record")
-    date: datetime = Field(..., example="2024-01-01T12:00:00", description="Timestamp for inventory record creation")
-    last_updated: Optional[datetime] = Field(None, example="2024-01-02T15:30:00", description="Timestamp for the last update")
+class InventoryResponse(BaseModel):
+    id: int
+    company_id: int
+    product_id: int
+    product_name: str
+    image: Optional[str]  # Make image optional if it could be null
+    quantity: int
+    base_price: float
+    selling_price: float
+    serial_no: str
+    date: datetime
+    last_updated: datetime
+    class Config:
+        from_attributes = True 
+
+class Item(BaseModel):
+    company_id: int
+    id: int
+    product_id: int
+    product_name: str
+    image: str
+    desc: str
+    stkQuantity: int
+    inQuantity: int
+    salesQtty: int
+    base_price: float
+    selling_price: float
+    serial_no: str
+    createdAt: str
+    last_updated: str
 
     class Config:
         from_attributes = True  # Ensures compatibility with SQLAlchemy models
