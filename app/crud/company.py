@@ -2,10 +2,10 @@ from typing import List, Optional
 from sqlalchemy.orm import Session
 from fastapi import HTTPException, status
 from app.models.company import Company
-from app.schemas.company import CompanyCreate, CompanyUpdate
+from app.schemas.company import CompanyCreate, CompanyRes, CompanyUpdate
 
 
-def create_company(db: Session, company: CompanyCreate) -> Company:
+def create_company(db: Session, company: CompanyCreate) -> CompanyRes:
     # Check if email or name already exists
     if db.query(Company).filter(Company.email == company.email).first():
         raise HTTPException(
@@ -33,7 +33,7 @@ def get_company(db: Session, company_id: int) -> Optional[Company]:
     return db.query(Company).filter(Company.id == company_id).first()
 
 
-def update_company(db: Session, company_id: int, update_data: CompanyUpdate) -> Company:
+def update_company(db: Session, company_id: int, update_data: CompanyUpdate) -> CompanyRes:
     company = get_company(db, company_id)
     if not company:
         raise HTTPException(

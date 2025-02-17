@@ -17,10 +17,9 @@ class User(Base):
 
     id = Column(String, primary_key=True, index=True, default=lambda: str(uuid.uuid4()))  
     company_id = Column(Integer, ForeignKey("companies.id"))
+    fullName = Column(String, nullable=True)
     username = Column(String, unique=True, nullable=False)
-    name = Column(String, nullable=True)
     email = Column(String, unique=True, nullable=False)
-    last_name = Column(String, nullable=True)
     tel_no = Column(String, nullable=False, unique=True)
     avatar = Column(String, nullable=True)
     password_hash = Column(String, nullable=False)

@@ -1,4 +1,4 @@
-import datetime
+from datetime import datetime, timedelta
 from typing import Optional
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
@@ -34,10 +34,11 @@ def create_subscription(db: Session, subscription: SubscriptionCreate):
         )
 
     # Calculate valid_until date (1 year from created_at)
-    valid_until = datetime.now() + datetime.timedelta(days=365)
+    # valid_until = datetime.now() + datetime.timedelta(days=365)
 
     # Create the subscription
-    db_subscription = Subscription(**subscription.dict(), valid_until=valid_until)
+    db_subscription = Subscription(**subscription.dict())
+    # db_subscription = Subscription(**subscription.dict(), valid_until=valid_until)
     db.add(db_subscription)
     db.commit()
     db.refresh(db_subscription)

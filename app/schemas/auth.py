@@ -2,8 +2,7 @@ from typing import Optional
 from pydantic import BaseModel, EmailStr, Field
 
 class RegisterRequest(BaseModel):
-    name: str = Field(..., example="John")
-    last_name: str = Field(..., example="Doe")
+    fullName: str = Field(..., example="John Doe")
     email: EmailStr = Field(..., example="johndoe@example.com")
     company_id: int = Field(..., example=1)
     password: str = Field(..., example="securePassword123")

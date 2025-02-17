@@ -18,8 +18,7 @@ def create_user(db: Session, user: RegisterRequest):
         hashed_password = hash_password(user.password)
         
         new_user = User(
-            name=user.name,
-            last_name=user.last_name,
+            fullName=user.fullName,
             username=user.email.split('@')[0], 
             email=user.email,
             tel_no=user.tel_no,

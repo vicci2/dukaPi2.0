@@ -1,14 +1,14 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from app.db import getDb
-from app.schemas.subscription import Subscription, SubscriptionCreate, SubscriptionUpdate
+from app.schemas.subscription import SubscriptionCreate, SubscriptionRes, SubscriptionUpdate
 from app.crud import subscription as crud_subscription
 
 subscription_router = APIRouter()
 
 @subscription_router.post(
     "/", 
-    response_model=Subscription, 
+    response_model=SubscriptionRes, 
     summary="Create a new subscription (Admin only)", 
     status_code=201
 )
@@ -17,7 +17,7 @@ def create_subscription(subscription: SubscriptionCreate, db: Session = Depends(
 
 @subscription_router.get(
     "/", 
-    response_model=list[Subscription], 
+    response_model=list[SubscriptionRes], 
     summary="Retrieve a list of subscriptions", 
     status_code=200
 )
@@ -26,7 +26,7 @@ def get_subscriptions(skip: int = 0, limit: int = 10, db: Session = Depends(getD
 
 @subscription_router.get(
     "/{subscription_id}", 
-    response_model=Subscription, 
+    response_model=SubscriptionRes, 
     summary="Retrieve a specific subscription by ID", 
     status_code=200
 )
@@ -38,7 +38,7 @@ def get_subscription(subscription_id: int, db: Session = Depends(getDb)):
 
 @subscription_router.put(
     "/{subscription_id}",
-    response_model=Subscription,
+    response_model=SubscriptionRes,
     summary="Update a subscription (Admin only)",
     status_code=200,
 )
@@ -55,7 +55,7 @@ def update_subscription(
 
 @subscription_router.put(
     "/{subscription_id}/cancel",
-    response_model=Subscription,
+    response_model=SubscriptionRes,
     summary="Cancel a subscription (Admin only)",
     status_code=200,
 )

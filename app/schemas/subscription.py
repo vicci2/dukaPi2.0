@@ -3,9 +3,9 @@ from datetime import datetime
 from typing import Optional
 
 class SubscriptionBase(BaseModel):
-    company_id: int = Field(..., example=1)  # Example: ID of the subscribing company
-    tier_id: int = Field(..., example=2)  # Example: ID of the selected subscription tier
-    transaction_code: str = Field(..., example="TX12345ABC")  # Example: Unique transaction code
+    company_id: int = Field(..., example=1) 
+    tier_id: int = Field(..., example=2)  #
+    transaction_code: str = Field(..., example="TX12345ABC")  
 
 # Schema for creating a subscription
 class SubscriptionCreate(SubscriptionBase):
@@ -14,10 +14,12 @@ class SubscriptionCreate(SubscriptionBase):
 class SubscriptionUpdate(BaseModel):
     company_id: Optional[int] = Field(None, example=1)  
     tier_id: Optional[int] = Field(None, example=2) 
-    transaction_code: Optional[str] = Field(None, example="TX67890DEF")  # Allow updating transaction code
+    transaction_code: Optional[str] = Field(None, example="TX67890DEF")
+    status: Optional[str] = None
 
 # Schema for subscription responses
-class Subscription(SubscriptionBase):
+class SubscriptionRes(SubscriptionBase):
+    status: Optional[str] = None
     created_at: Optional[datetime] = Field(None, example="2025-01-01T12:00:00")  # Example: Timestamp of creation
 
     class Config:
