@@ -2,6 +2,8 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from app.db import getDb
 from app.crud import tier as crud_tier
+from app.dependencies.auth import get_current_user_with_role
+from app.models.user import User
 from app.schemas.tier import TierRes, TierCreate, TierUpdate
 
 tier_router = APIRouter()
@@ -21,8 +23,8 @@ def create_tier(tier: TierCreate, db: Session = Depends(getDb)):
     summary="Retrieve a list of tiers", 
     status_code=200
 )
-def get_tiers(skip: int = 0, limit: int = 10, db: Session = Depends(getDb)):
-    return crud_tier.get_tiers(db, skip=skip, limit=limit)
+def get_tiers(db: Session = Depends(getDb), current_user: User = Depends(get_current_user_with_role("admin"))):
+    return crud_tier.get_tiers(db)
 
 @tier_router.get(
     "/{tier_id}", 
@@ -30,7 +32,7 @@ def get_tiers(skip: int = 0, limit: int = 10, db: Session = Depends(getDb)):
     summary="Retrieve a specific tier by ID", 
     status_code=200
 )
-def get_tier(tier_id: int, db: Session = Depends(getDb)):
+def get_tier(tier_id: int, db: Session = Depends(getDb), current_user: User = Depends(get_current_user_with_role("admin"))):
     tier = crud_tier.get_tier(db, tier_id)
     if not tier:
         raise HTTPException(status_code=404, detail="Tier not found")
@@ -45,7 +47,7 @@ def get_tier(tier_id: int, db: Session = Depends(getDb)):
 def update_tier(
     tier_id: int, 
     tier_update: TierUpdate, 
-    db: Session = Depends(getDb)
+    db: Session = Depends(getDb), current_user: User = Depends(get_current_user_with_role("admin"))
 ):
     """
     Update details of an existing tier. 
@@ -62,7 +64,7 @@ def update_tier(
 )
 def delete_tier(
     tier_id: int, 
-    db: Session = Depends(getDb)
+    db: Session = Depends(getDb), current_user: User = Depends(get_current_user_with_role("admin"))
 ):
     """
     Delete a specific tier by ID. Be cautious when deleting tiers as it may affect existing subscriptions.

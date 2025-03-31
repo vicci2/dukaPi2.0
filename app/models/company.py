@@ -10,6 +10,9 @@ class Company(Base):
     phone = Column(String, nullable=False)
     email = Column(String, unique=True, nullable=False)
     location = Column(String, nullable=True)
+    logo = Column(String, nullable=True)
+    socials = Column(String, nullable=True)
+    # branches = Column(String, nullable=True)
 
     user = relationship("User", back_populates="company")
     subscription = relationship("Subscription", back_populates="company")

@@ -4,23 +4,29 @@ from typing import Optional
 
 class SubscriptionBase(BaseModel):
     company_id: int = Field(..., example=1) 
-    tier_id: int = Field(..., example=2)  #
-    transaction_code: str = Field(..., example="TX12345ABC")  
+    tier_id: int = Field(..., example=2)  
 
 # Schema for creating a subscription
 class SubscriptionCreate(SubscriptionBase):
     pass
 
 class SubscriptionUpdate(BaseModel):
-    company_id: Optional[int] = Field(None, example=1)  
     tier_id: Optional[int] = Field(None, example=2) 
     transaction_code: Optional[str] = Field(None, example="TX67890DEF")
     status: Optional[str] = None
 
+class cancelSubscription(BaseModel):
+    status: Optional[str] = None
+    last_update : Optional[datetime] = Field(None, example="2025-01-01T12:00:00") 
+
 # Schema for subscription responses
 class SubscriptionRes(SubscriptionBase):
+    transaction_code: Optional[str] = Field(None, example="TX12345ABC")  
+    id: Optional[int] = Field(None, example=2) 
     status: Optional[str] = None
-    created_at: Optional[datetime] = Field(None, example="2025-01-01T12:00:00")  # Example: Timestamp of creation
+    last_update : Optional[datetime] = Field(None, example="2025-01-01T12:00:00") 
+    created_at: Optional[datetime] = Field(None, example="2025-01-01T12:00:00") 
+    # total: Optional[int] = Field(..., example=4)
 
     class Config:
         from_attributes = True

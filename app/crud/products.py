@@ -1,41 +1,102 @@
-from typing import Optional
+from datetime import datetime
+from typing import List
+from sqlalchemy import func
 from sqlalchemy.orm import Session
-from fastapi import Depends, File, HTTPException, UploadFile, status
-from app.dependencies.auth import get_current_user_with_role
+from fastapi import HTTPException, status
 from app.models.company import Company
 from app.models.inventory import Inventory
 from app.models.products import Product
+from app.models.sales import Sale
 from app.models.vendors import Vendor
-from app.schemas.inventory import InventoryCreate
-from app.schemas.product import ProductAvail, ProductCreate, ProductUpdate
-from app.schemas.user import User
-from app.utils.file_utils import save_upload_file
+from app.schemas.product import ProductAvail, ProductCreate, ProductResponse, ProductUpdate
 
 # Helper function to fetch a product by ID
-def get_product_by_id(db: Session, product_id: int) -> Product:
-    product = db.query(Product).filter(Product.id == product_id).first()
-    if not product:
+def get_product_by_id(db: Session, product_id: int) -> ProductResponse:
+    product_data = (
+        db.query(
+            Product,
+            Inventory.id.label("inventory_id"),
+            Inventory.selling_price.label("selling_price"),
+            Inventory.quantity.label("inventory_quantity"),
+            Inventory.date.label("inventory_created_at"),
+            Inventory.last_updated.label("inventory_last_updated"),
+            func.coalesce(func.sum(Sale.quantity), 0).label("total_sales"),  # Accumulate sale quantity
+            func.max(Sale.sale_date).label("last_sold_at"),  # Get latest sale date
+            func.max(Sale.last_updated).label("sale_last_updated"),  # Get latest sale update
+        )
+        .outerjoin(Inventory, Product.id == Inventory.product_id)
+        .outerjoin(Sale, Inventory.id == Sale.inventory_id)  # 🔹 Join Sale table
+        .filter(Product.id == product_id)
+        .group_by(Product.id, Inventory.id)  # 🔹 Ensure correct aggregation
+        .first()  # Get the first result
+    )
+
+    if not product_data:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Product with ID {product_id} not found."
         )
-    return product
+
+    product, inventory_id, selling_price, inventory_quantity, inventory_created_at, inventory_last_updated,  total_sales, sale_last_updated, sold_at = product_data
+
+    return ProductResponse(
+        **product.__dict__,
+        selling_price=selling_price if selling_price is not None else float(product.b_p) * 1.3,
+        inventory_id=inventory_id,
+        inventory_quantity=inventory_quantity if inventory_quantity is not None else 0,
+        inventory_created_at=inventory_created_at,
+        inventory_last_updated=inventory_last_updated,
+        total_sales=total_sales,
+        sold_at=sold_at,
+        sale_last_updated=sale_last_updated
+    )
 
 # Helper function to check if a record exists
 def record_exists(db: Session, model, **filters) -> bool:
     return db.query(model).filter_by(**filters).first() is not None
 
+def format_response(stock) -> List[ProductResponse]:
+    return [
+        ProductResponse(
+            **product.__dict__,
+            inventory_id=inventory_id,
+            selling_price=selling_price if selling_price is not None else float(product.b_p) * 1.3,
+            inventory_quantity=inventory_quantity if inventory_quantity is not None else 0,
+            inventory_created_at=inventory_created_at or datetime.utcnow(),
+            inventory_last_updated=inventory_last_updated or datetime.utcnow(),
+            total_sales=total_sales or 0,
+            sold_at=sold_at or datetime.utcnow(),
+            sale_last_updated=sale_last_updated or datetime.utcnow()
+        )
+        for product, inventory_id, selling_price, inventory_quantity, 
+        inventory_created_at, inventory_last_updated, total_sales, 
+        sale_last_updated, sold_at in stock
+    ]
+
 # Retrieve all products with pagination
-def get_all_products(
-    db: Session, skip: int = 0, limit: int = 100, current_user: User = Depends(get_current_user_with_role("admin"))
-):
-    return (
-        db.query(Product)
+def get_all_products(db: Session, current_user) -> List[ProductResponse]:
+    stock = (
+        db.query(
+            Product,
+            Inventory.id.label("inventory_id"),
+            Inventory.selling_price.label("selling_price"),
+            Inventory.quantity.label("inventory_quantity"),
+            Inventory.date.label("inventory_created_at"),
+            Inventory.last_updated.label("inventory_last_updated"),
+            func.coalesce(func.sum(Sale.quantity), 0).label("total_sales"),  # Sum sale quantity
+            func.max(Sale.sale_date).label("last_sold_at"),  # Get latest sale date
+            func.max(Sale.last_updated).label("sale_last_updated"),  # Get latest update on sale
+        )
+        .outerjoin(Inventory, Product.id == Inventory.product_id)
+        .outerjoin(Sale, Inventory.id == Sale.inventory_id)
         .filter(Product.company_id == current_user.company_id)
-        .offset(skip)
-        .limit(limit)
+        .group_by(Product.id, Inventory.id)  # Group by non-aggregated fields
+        .offset(0)
+        .limit(100)
         .all()
     )
+
+    return format_response(stock)
 
 # Create a new product
 # def create_product(db: Session, product: ProductCreate, image: Optional[UploadFile] = File(None)):
@@ -54,11 +115,12 @@ def create_product(db: Session, product: ProductCreate):
             detail=f"Vendor with ID {product.vendor_id} does not exist."
         )
 
-    # Ensure the product name is unique
-    if record_exists(db, Product, product_name=product.product_name):
+    # Ensure the serial is unique
+    existing_product = db.query(Product).filter(Product.serial_no == product.serial_no).first()
+    if existing_product:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Product with name '{product.product_name}' already exists."
+            detail=f"Product with serial '{product.serial_no}' already exists."
         )
     
     new_product = Product(**product.dict())
@@ -77,11 +139,17 @@ def create_product(db: Session, product: ProductCreate):
     #     product.image =  save_upload_file(image)
 
 # Update a product
-def update_product(db: Session, product_id: int, payload: ProductUpdate) -> Product:
-    product = get_product_by_id(db, product_id)
+def update_product(db: Session, product_id: int, payload: ProductUpdate) -> ProductUpdate:
+    product = db.query(Product).filter(Product.id == product_id).first()
+
+    if not product:
+        raise HTTPException(status_code=404, detail="Product not found")
 
     for key, value in payload.dict(exclude_unset=True).items():
         setattr(product, key, value)
+
+    # Update the last_updated timestamp
+    product.last_updated = func.now()
 
     try:
         db.commit()
@@ -92,7 +160,8 @@ def update_product(db: Session, product_id: int, payload: ProductUpdate) -> Prod
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to update product: {str(e)}"
         )
-    
+
+
     return product
 
 # Avail or update inventory record (handle stock adjustments)
@@ -139,6 +208,7 @@ def avail(id: int, db: Session, payload: ProductAvail):
 
         # Deduct from product stock
         product.quantity -= payload.quantity
+        product.last_updated = func.now()
 
         # Commit changes
         db.commit()

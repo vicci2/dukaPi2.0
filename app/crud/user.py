@@ -1,26 +1,34 @@
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 from app.models.user import User
-from app.schemas.tier import TierUpdate
+from app.schemas.user import UserUpdate, User as useres
 
-def get_users(db: Session, skip: int = 0, limit: int = 10):
-    return db.query(User).offset(skip).limit(limit).all()
+def get_users(db: Session, current_user) -> list[useres]:
+    users = db.query(User).filter(User.company_id == current_user.company_id).offset(0).limit(100).all()
+    if not users:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No users found")
 
-def get_user(db: Session, user_id: str):
+    return users
+
+def get_user(db: Session, user_id: str, current_user):
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"User with ID {user_id} not found."
         )
+    
+    if current_user and str(user.id) != str(current_user.id):  
+        raise HTTPException(status_code=403, detail="Not authorized to access this profile")
+
     return user
 
-def update_user(db: Session, user_id: str, payload: TierUpdate):
+def update_user(db: Session, user_id: str, payload: UserUpdate, current_user):
     """
     Update user details.
     """
     # Log failure if unauthorized update attempt
-    user = get_user(user_id)
+    user = get_user(db, user_id, current_user)
     # Log failure if user not found
     if not user:
         raise HTTPException(
@@ -45,11 +53,14 @@ def update_user(db: Session, user_id: str, payload: TierUpdate):
 
     return user
 
-def delete_user(db: Session, user_id: str,):
+def delete_user(db: Session, user_id: str, current_user):
     """
     Delete a User
     """
-    user = get_user(user_id)
+    if str(user_id) != str(current_user.id):
+        raise HTTPException(status_code=403, detail="Not authorized to delete this user")
+
+    user = get_user(db, user_id, current_user)
     # Log failure if unauthorized update attempt
     if not user:
         raise HTTPException(

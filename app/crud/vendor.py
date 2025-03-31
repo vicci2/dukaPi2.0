@@ -18,12 +18,19 @@ def record_exists(db: Session, model, **filters) -> bool:
     return db.query(model).filter_by(**filters).first() is not None
 
 # Retrieve all vendors
-def get_all_vendors(db: Session, skip: int = 0, limit: int = 10):
-    return db.query(Vendor).offset(skip).limit(limit).all()
+def get_all_vendors(db: Session, current_user):
+    vendors = db.query(Vendor).filter(Vendor.company_id == current_user.company_id).offset(0).limit(20).all()
+    return vendors
 
 # Create a new vendor
 def create_vendor(db: Session, vendor_create: VendorCreate):
-    # Optionally, check for uniqueness or required conditions here
+    existing_vendor = db.query(Vendor).filter(Vendor.name == vendor_create.name).first()
+    if existing_vendor:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="A vendor with this name already exists."
+        )
+   
     new_vendor = Vendor(**vendor_create.dict())
     db.add(new_vendor)
     try:
@@ -54,8 +61,10 @@ def update_vendor(db: Session, vendor_id: int, vendor_update: VendorUpdate):
     return db_vendor
 
 # Delete a vendor
-def delete_vendor(db: Session, vendor_id: int):
+def delete_vendor(db: Session, vendor_id: int, current_user):
     db_vendor = get_vendor_by_id(db, vendor_id)
+    if str(current_user.role != "admin"):
+        raise HTTPException(status_code=403, detail="Not authorized to delete this user")
     try:
         db.delete(db_vendor)
         db.commit()

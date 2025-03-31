@@ -9,16 +9,13 @@ class Vendor(Base):
     # attaching a prefered tablename:
     __tablename__='vendors'
     # Column defination:
-    id = Column(Integer, primary_key=True, index=True)
-    # id = Column(String, primary_key=True, index=True, default=lambda: str(uuid.uuid4()))  
+    id = Column(Integer, primary_key=True, index=True) 
     company_id = Column(Integer, ForeignKey('companies.id', ondelete='CASCADE'), nullable=False, index=True)
-    password_hash = Column(String, nullable=False)
     name = Column(String, nullable=True)
     email = Column(String, unique=True, nullable=False)
     address = Column(String, nullable=False)
     tel_no = Column(String, nullable=False, unique=True)
-    avatar = Column(String, nullable=True)
-    status = Column(String, nullable=False, default='Completed', comment="Delivery/Return status")
+    last_update = Column(DateTime(timezone=False), server_default=func.now()) 
     createdAt = Column(DateTime(timezone=False), server_default=func.now())
 
     # Relationships

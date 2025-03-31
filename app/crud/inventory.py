@@ -1,4 +1,5 @@
 from typing import List
+from sqlalchemy import func
 from sqlalchemy.orm import Session, joinedload
 from fastapi import Depends, HTTPException, status
 from app.dependencies.auth import get_current_user, get_current_user_with_role
@@ -10,53 +11,28 @@ from app.schemas.inventory import InventoryAdjust, InventoryCreate, InventoryRes
 
 from typing import List
 
-def format_inventory_response(inventories) -> List[Item]:
-    return [
-        Item(
-                company_id=inventory.company_id,
-                id=inventory.id,
-                product_id=inventory.product_id,
-                product_name=product.product_name,
-                image=product.image,
-                desc=product.desc,
-                base_price=product.b_p,
-                last_updated=str(product.last_updated) if product.last_updated else None,  
-                createdAt=str(inventory.date) if inventory.date else None, 
-                stkQuantity=product.quantity, 
-                inQuantity=inventory.quantity,
-                salesQtty=getattr(sale, "quantity", 0), 
-                selling_price=getattr(sale, "selling_price", inventory.selling_price),
-                serial_no=inventory.serial_no,
-            )
-            for inventory, product, sale in inventories 
-    ]
-
-    """ 
-    stkQuantity: int
-    inQuantity: int
-    salesQtty: int
-    """
-
 # Helper function to fetch an inventory by ID
-def get_inventory_by_id(db: Session, inventory_id: int):
-    inventory = (
-        db.query(Inventory, Product, Sale)
-        .join(Product, Inventory.product_id == Product.id).outerjoin(Sale, Sale.inventory_id == Inventory.id) 
-        .filter(Inventory.id == inventory_id)
-        .first()
-    )
+def get_inventory_by_id(db: Session, inventory_id: int, current_user) -> InventoryResponse:
+    result = db.query(
+        Inventory.id, Inventory.company_id, Inventory.product_id,
+        Product.product_name.label("product_name"), Product.image,
+        Inventory.quantity, Inventory.base_price, Inventory.selling_price,
+        Inventory.serial_no, Inventory.date, Inventory.last_updated
+    ).join(Product, Inventory.product_id == Product.id).filter(
+        Inventory.id == inventory_id and Inventory.company_id ==current_user.id
+    ).first()
 
-    if not inventory:
+    if not result:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Inventory record with ID {inventory_id} not found."
         )
 
-    return format_inventory_response([inventory])[0]  
+    return InventoryResponse(**result._asdict())  # Convert Row object to dictionary
 
 # Helper function to fetch a product by ID
-def get_product_by_id(db: Session, product_id: int) -> Product:
-    product = db.query(Product).filter(Product.id == product_id).first()
+def get_product_by_id(db: Session, product_id: int, current_user) -> Product:
+    product = db.query(Product).filter(Product.id == product_id and Inventory.company_id ==current_user.company_id).offset(0).limit(1).first()
     if not product:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -66,10 +42,10 @@ def get_product_by_id(db: Session, product_id: int) -> Product:
 
 # Retrieve all inventory records
 def get_all_inventories(
-    db: Session, skip: int = 0, limit: int = 10) -> List[InventoryResponse]:
+    db: Session, current_user) -> List[InventoryResponse]:
     # Fetch inventories with related product details
     inventories = (
-        db.query(Inventory).options(joinedload(Inventory.product)).order_by(Inventory.product_id).offset(skip).limit(limit).all()
+        db.query(Inventory).options(joinedload(Inventory.product)).filter(Inventory.company_id == current_user.company_id).order_by(Inventory.product_id).offset(0).limit(100).all()
     )
 
     # Serialize to InventoryResponse, including related product data
@@ -91,8 +67,8 @@ def get_all_inventories(
     ]
 
 # Update inventory by ID
-def update_inventory(db: Session, inventory_id: int, payload: InventoryUpdate) -> Inventory:
-    inventory_item = get_inventory_by_id(db, inventory_id)
+def update_inventory(db: Session, inventory_id: int, payload: InventoryUpdate, current_user) -> Inventory:
+    inventory_item = get_inventory_by_id(db, inventory_id,current_user)
     
     for key, value in payload.dict(exclude_unset=True).items():
         """ if key == "quantity" and value < 2:  # Ensure minimum quantity threshold
@@ -105,7 +81,9 @@ def update_inventory(db: Session, inventory_id: int, payload: InventoryUpdate) -
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=f"{key.replace('_', ' ').capitalize()} must be greater than zero."
             )
-        setattr(inventory_item, key, value)  
+        setattr(inventory_item, key, value) 
+
+    inventory_item.last_updated = func.now() 
 
     try:
         db.commit()
@@ -166,7 +144,8 @@ def restock_product(db: Session, inventory_id: int, quantity: int):
 
     # Update stock
     inventory_item.quantity -= quantity
-    product.quantity += quantity
+    product.last_updated = func.now()
+    inventory_item.last_updated = func.now()
 
     try:
         db.commit()
@@ -187,18 +166,26 @@ def restock_product(db: Session, inventory_id: int, quantity: int):
     }
 
 # Increase inventory (adjust positive stock levels)
-def increase_inventory(db: Session, inventory_id: int, payload: InventoryAdjust):
+def increase_inventory(db: Session, inventory_id: int, payload: InventoryAdjust, current_user):
     inventory_item = db.query(Inventory).filter(Inventory.id == inventory_id).first()
-    product = get_product_by_id(db, inventory_item.product_id)
+    if not inventory_item:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Inventory item not found.")
 
-    if inventory_item.quantity + payload.adjustment < 0:
+    product = get_product_by_id(db, inventory_item.product_id, current_user)
+    if not product:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Product not found.")
+
+    if payload.adjustment > product.quantity:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Adjustment would result in negative inventory levels."
+            detail="Not enough stock available to increase inventory."
         )
 
+    # Adjust inventory levels
     inventory_item.quantity += payload.adjustment
-    product.quantity -= payload.adjustment
+    product.quantity -= payload.adjustment 
+    product.last_updated = func.now()
+    inventory_item.last_updated = func.now()
 
     try:
         db.commit()
@@ -207,23 +194,39 @@ def increase_inventory(db: Session, inventory_id: int, payload: InventoryAdjust)
         db.rollback()
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to adjust inventory: {str(e)}",
+            detail=f"Failed to adjust inventory: {str(e)}"
         )
 
     return inventory_item
 
 # Force reduce inventory (adjust negative stock)
-def reduce_inventory(db: Session, inventory_id: int, payload: InventoryAdjust):
+def reduce_inventory(db: Session, inventory_id: int, payload: InventoryAdjust, current_user):
+    # Fetch inventory item
     inventory_item = db.query(Inventory).filter(Inventory.id == inventory_id).first()
-    product = get_product_by_id(db, inventory_item.product_id)
+    if not inventory_item:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Inventory item not found.")
 
-    # Ensure adjustment is negative for reduction
-    if payload.adjustment > 0:
-        payload.adjustment = -payload.adjustment  # Force negative value
+    # Fetch product associated with the inventory item
+    product = get_product_by_id(db, inventory_item.product_id, current_user)
+    if not product:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Product not found.")
 
-    inventory_item.quantity += payload.adjustment
-    product.quantity -= payload.adjustment
+    # Ensure the adjustment is negative
+    adjustment = -abs(payload.adjustment)  
+    product.last_updated = func.now()
 
+    # Check if adjustment would make inventory levels go negative
+    if inventory_item.quantity + adjustment < 0:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Adjustment would result in negative inventory levels."
+        )
+
+    inventory_item.quantity += adjustment
+    product.quantity += adjustment  
+    product.last_updated = func.now()
+    inventory_item.last_updated = func.now()
+    # Commit changes
     try:
         db.commit()
         db.refresh(inventory_item)
@@ -231,7 +234,7 @@ def reduce_inventory(db: Session, inventory_id: int, payload: InventoryAdjust):
         db.rollback()
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to force adjust inventory: {str(e)}",
+            detail=f"Failed to adjust inventory: {str(e)}"
         )
 
     return inventory_item

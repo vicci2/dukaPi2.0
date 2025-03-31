@@ -1,3 +1,4 @@
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 from fastapi import HTTPException, status
 from app.models.company import Company
@@ -60,7 +61,8 @@ def create_sale(db: Session, payload: SalesCreate) -> Sale:
     # Create sale and update inventory within a transaction
     new_sale = Sale(**payload.dict())
     inventory_item.quantity -= payload.quantity
-
+    inventory_item.last_updated = func.now()
+    
     try:
         db.add(new_sale)
         db.commit()
@@ -79,6 +81,8 @@ def update_sale(db: Session, sale: Sale, payload: SalesUpdate) -> Sale:
     for key, value in payload.dict(exclude_unset=True).items():
         setattr(sale, key, value)  # Update only provided fields
     db.add(sale)
+    # sale.last_updated = func.now()
+
     try:
         db.commit()
         db.refresh(sale)
@@ -101,3 +105,40 @@ def delete_sale(db: Session, sale: Sale):
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to delete sale: {str(e)}",
         )
+    
+""" 
+def format_sale_response(sales) -> List[SalesResponse]:
+    return [
+        SalesResponse(
+            id=sale.id,
+            company_id=sale.company_id,
+            inventory_id=sale.inventory_id,
+            quantity=sale.quantity,
+            selling_price=sale.selling_price,
+            base_price=sale.base_price,
+            status=sale.status,
+            last_updated=sale.last_updated,
+            product_name=product.product_name,
+        )
+        for sale, inventory, product in sales  
+    ]
+
+# Fetch a sale by ID and include associated product details
+def get_sale_by_id(db: Session, sale_id: int) -> SalesResponse:
+    sale = (
+        db.query(Sale, Inventory, Product)
+        .join(Inventory, Inventory.id == Sale.inventory_id)
+        .join(Product, Product.id == Inventory.product_id)
+        .filter(Sale.id == sale_id)
+        .first()
+    )
+
+    if not sale:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Sale with ID {sale_id} not found."
+        )
+
+    # ✅ Apply `format_sale_response` to return all sale details properly
+    return format_sale_response([sale])[0]
+"""

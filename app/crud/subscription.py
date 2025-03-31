@@ -18,8 +18,12 @@ def validate_tier(db: Session, tier_id: int):
 def check_existing_subscription(db: Session, company_id: int, tier_id: int) -> Optional[Subscription]:
     return db.query(Subscription).filter(
         Subscription.company_id == company_id,
-        Subscription.tier_id == tier_id
+        # Subscription.tier_id == tier_id
     ).first()
+
+def check_existing_transaction_code(db: Session, transaction_code: str) -> bool:
+    return db.query(Subscription).filter(Subscription.transaction_code == transaction_code).first() is not None
+
 
 def create_subscription(db: Session, subscription: SubscriptionCreate):
     # Validate the tier exists
@@ -32,6 +36,13 @@ def create_subscription(db: Session, subscription: SubscriptionCreate):
             status_code=409,
             detail="Company already has an active subscription for this tier."
         )
+    
+    # Check if the transaction code already exists
+    # if check_existing_transaction_code(db, subscription.transaction_code):
+    #     raise HTTPException(
+    #         status_code=400,
+    #         detail=f"Transaction code {subscription.transaction_code} already exists."
+    #     )
 
     # Calculate valid_until date (1 year from created_at)
     # valid_until = datetime.now() + datetime.timedelta(days=365)
@@ -45,12 +56,12 @@ def create_subscription(db: Session, subscription: SubscriptionCreate):
     return db_subscription
 
 # Retrieve all subscriptions with pagination and metadata
-def get_subscriptions(db: Session, skip: int = 0, limit: int = 10):
-    total = db.query(Subscription).count()
-    subscriptions = db.query(Subscription).offset(skip).limit(limit).all()
+def get_subscriptions(db: Session, current_user):
+    total = db.query(Subscription).filter(Subscription.company_id == current_user.company_id).count()
+    subscriptions = db.query(Subscription).filter(Subscription.company_id == current_user.company_id).offset(0).limit(40).all()
     return subscriptions
 
-def get_subscription(db: Session, subscription_id: int):
+def get_subscription(db: Session, subscription_id: int,):
     return db.query(Subscription).filter(Subscription.id == subscription_id).first()
 
 def update_subscription(db: Session, subscription_id: int, payload: SubscriptionUpdate):
@@ -68,13 +79,20 @@ def update_subscription(db: Session, subscription_id: int, payload: Subscription
         validate_tier(db, payload.tier_id)
         subscription.tier_id = payload.tier_id
 
+   # Check if the transaction code already exists
+    if check_existing_transaction_code(db, payload.transaction_code):
+        raise HTTPException(
+            status_code=400,
+            detail=f"Transaction code {payload.transaction_code} already exists."
+        )
+
     # Update transaction_code if provided
     if payload.transaction_code:
         subscription.transaction_code = payload.transaction_code
     
-    # Update other fields as necessary (e.g., company_id is optional for updating)
-    if payload.company_id:
-        subscription.company_id = payload.company_id
+    # Update other status
+    if payload.status:
+        subscription.status = payload.status
     
     # Update any other fields here...
     try:

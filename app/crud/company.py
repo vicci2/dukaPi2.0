@@ -24,17 +24,16 @@ def create_company(db: Session, company: CompanyCreate) -> CompanyRes:
     db.refresh(db_company)
     return db_company
 
+def get_companies(db: Session, current_user) -> List[CompanyRes]:
+    companies = db.query(Company).filter(Company.id == current_user.company_id).offset(0).limit(40).all()
+    return companies
 
-def get_companies(db: Session, skip: int = 0, limit: int = 10) -> List[Company]:
-    return db.query(Company).offset(skip).limit(limit).all()
+def get_company(db: Session, current_user) -> Optional[CompanyRes]:
+    company = db.query(Company).filter(Company.id == current_user.company_id).first()
+    return CompanyRes.model_validate(company) if company else None
 
-
-def get_company(db: Session, company_id: int) -> Optional[Company]:
-    return db.query(Company).filter(Company.id == company_id).first()
-
-
-def update_company(db: Session, company_id: int, update_data: CompanyUpdate) -> CompanyRes:
-    company = get_company(db, company_id)
+def update_company(db: Session, company_id: int, update_data: CompanyUpdate, current_user) -> CompanyRes:
+    company = get_company(db, current_user)
     if not company:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -55,9 +54,8 @@ def update_company(db: Session, company_id: int, update_data: CompanyUpdate) -> 
         )
     return company
 
-
-def delete_company(db: Session, company_id: int) -> None:
-    company = get_company(db, company_id)
+def delete_company(db: Session, company_id: int, current_user) -> None:
+    company = get_company(db, company_id, current_user)
     if not company:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,

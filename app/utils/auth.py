@@ -9,7 +9,7 @@ from datetime import datetime, timedelta
 # JWT and OAuth2 configuration
 SECRET_KEY = "671df52ff4762004db68f6b0aff77fb4cf0752103d80555472109826b60dfa8569"
 ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 30
+ACCESS_TOKEN_EXPIRE_MINUTES = 300
 
 # JWT Utility Function
 def create_access_token(data: dict) -> str:

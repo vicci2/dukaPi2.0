@@ -6,9 +6,9 @@ from datetime import datetime
 class SalesBase(BaseModel):
     company_id: int = Field(..., example=1, description="ID of the copmpany selling the item")
     inventory_id: int = Field(..., example=1, description="ID of the inventory item being sold")
-    quantity: Decimal = Field(..., ge=1, example=10, description="Quantity of the product being sold")
-    selling_price: Decimal = Field(..., ge=0.0, example=50.00, description="Selling price per unit")
-    base_price: Optional[Decimal] = Field(None, example=40.00, description="Base price during the sale")
+    quantity: int = Field(..., gt=0, example=10, description="Quantity of the product being sold")
+    selling_price: float = Field(..., ge=0.0, example=50.00, description="Selling price per unit")
+    base_price: Optional[float] = Field(None, example=40.00, description="Base price during the sale")
     status: Optional[str] = Field(default="Completed", example="Completed", description="Status of the sale")
 
 class SalesCreate(SalesBase):
@@ -22,6 +22,7 @@ class SalesUpdate(BaseModel):
 class SalesResponse(SalesBase):
     id: int = Field(..., example=1, description="Unique identifier for the sale record")
     last_updated: datetime = Field(..., example="2024-01-01T15:00:00", description="Last updated timestamp for the sale record")
+    sale_date: datetime = Field(..., example="2024-01-01T15:00:00", description="Saledate for the sale record")
 
     class Config:
         from_attributes = True

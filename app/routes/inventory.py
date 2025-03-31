@@ -21,20 +21,20 @@ def get_inventories(skip: int = 0, limit: int = 10, db: Session = Depends(getDb)
     """
     Retrieve a list of inventory records with pagination.
     """
-    return crud_inventory.get_all_inventories(db, skip, limit)
+    return crud_inventory.get_all_inventories(db, current_user)
 
 # Retrieve a single inventory record
 @inventory_router.get(
     "/{id}",
-    response_model=Item,
+    response_model=InventoryResponse,
     summary="Retrieve a single inventory record",
     status_code=200,
 )
-def get_inventory(id: int, db: Session = Depends(getDb)):
+def get_inventory(id: int, db: Session = Depends(getDb), current_user: User = Depends(get_current_user_with_role("admin", "manager", "staff"))):
     """
     Retrieve details of a single inventory record by its ID.
     """
-    return crud_inventory.get_inventory_by_id(db, id)
+    return crud_inventory.get_inventory_by_id(db, id, current_user)
 
 # Update an existing inventory record
 @inventory_router.put(
@@ -43,11 +43,11 @@ def get_inventory(id: int, db: Session = Depends(getDb)):
     summary="Update an existing inventory record (Admin Or Manager only)",
     status_code=200
 )
-def update_inventory(id: int, payload: InventoryUpdate, db: Session = Depends(getDb)):
+def update_inventory(id: int, payload: InventoryUpdate, db: Session = Depends(getDb), current_user: User = Depends(get_current_user_with_role("admin", "manager"))):
     """
     Update an existing inventory record by its ID.
     """
-    return crud_inventory.update_inventory(db, id, payload)
+    return crud_inventory.update_inventory(db, id, payload,current_user)
 
 # Delete an inventory record
 @inventory_router.delete(
@@ -56,7 +56,7 @@ def update_inventory(id: int, payload: InventoryUpdate, db: Session = Depends(ge
     summary="Delete an inventory record (Admin only)",
     status_code=200
 )
-def delete_inventory(id: int, db: Session = Depends(getDb)):
+def delete_inventory(id: int, db: Session = Depends(getDb), current_user: User = Depends(get_current_user_with_role("admin"))):
     """
     Delete an inventory record by its ID.
     """
@@ -69,7 +69,7 @@ def delete_inventory(id: int, db: Session = Depends(getDb)):
     summary="Restock product from inventory (Admin or Manager only)",
     status_code=200,
 )
-def restock_product(id: int, quantity: int, db: Session = Depends(getDb)):
+def restock_product(id: int, quantity: int, db: Session = Depends(getDb), current_user: User = Depends(get_current_user_with_role("admin", "manager"))):
     """
     Restock product by transferring stock from inventory to the product's stock.
     """
@@ -82,11 +82,11 @@ def restock_product(id: int, quantity: int, db: Session = Depends(getDb)):
     summary="Increase inventory stock levels (Admin or Manager only)",
     status_code=200,
 )
-def increase_inventory(id: int, payload: InventoryAdjust, db: Session = Depends(getDb)):
+def increase_inventory(id: int, payload: InventoryAdjust, db: Session = Depends(getDb),  current_user: User = Depends(get_current_user_with_role("admin", "manager"))):
     """
     Increase inventory stock levels with positive adjustment.
     """
-    return crud_inventory.increase_inventory(db, id, payload)
+    return crud_inventory.increase_inventory(db, id, payload, current_user)
 
 # Force reduce inventory (decrease stock levels)
 @inventory_router.patch(
@@ -95,8 +95,8 @@ def increase_inventory(id: int, payload: InventoryAdjust, db: Session = Depends(
     summary="Force reduce inventory stock levels (Admin or Manager only)",
     status_code=200,
 )
-def reduce_inventory(id: int, payload: InventoryAdjust, db: Session = Depends(getDb)):
+def reduce_inventory(id: int, payload: InventoryAdjust, db: Session = Depends(getDb), current_user: User = Depends(get_current_user_with_role("admin", "manager"))):
     """
     Force reduce inventory stock levels (including negative stock).
     """
-    return crud_inventory.reduce_inventory(db, id, payload)
+    return crud_inventory.reduce_inventory(db, id, payload, current_user)

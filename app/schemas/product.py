@@ -35,7 +35,6 @@ class ProductAvail(BaseModel):
     base_price: float = Field(..., ge=0.0, example=100.00, description="Base price of the product")
     serial_no: str = Field(..., example="12345-ABC", description="Unique identifier for the inventory item")
 
-
 # Schema for deleting a product
 class ProductDel(BaseModel):
     id: int
@@ -46,6 +45,15 @@ class ProductResponse(ProductBase):
     id: int = Field(..., example=1)
     date: datetime = Field(..., example="2024-01-01T12:00:00")
     last_updated: Optional[datetime] = Field(None, example="2024-01-02T15:30:00")
+    # inventory deets
+    inventory_id: Optional[int] = Field(None, example=1)
+    selling_price: Optional[float] = Field(None, ge=0.0, example=600.00)
+    inventory_quantity: Optional[int] = Field(None, ge=0, example=50)
+    inventory_last_updated: Optional[datetime] = Field(..., example = "2024-01-01T12:00:00")
+    inventory_created_at: Optional[datetime] = Field(..., example = "2024-01-01T12:00:00")
+    total_sales: Optional[int] = Field(None, ge=0, example=50)
+    sold_at: Optional[datetime] = Field(..., example = "2024-01-01T12:00:00")
+    sale_last_updated: Optional[datetime] = Field(..., example = "2024-01-01T12:00:00")
 
     class Config:
         from_attributes = True  # Enables compatibility with SQLAlchemy models

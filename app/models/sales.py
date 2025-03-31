@@ -21,9 +21,9 @@ class Sale(Base):
     id = Column(Integer, primary_key=True, index=True)
     company_id = Column(Integer, ForeignKey('companies.id', ondelete='CASCADE'), nullable=False, index=True)
     inventory_id = Column(Integer, ForeignKey("inventory.id", ondelete="SET NULL",), nullable=False, index=True)
-    quantity = Column(Numeric, nullable=False, comment="Quantity sold")
-    base_price = Column(Numeric, nullable=False, comment="Base price during sale")
-    selling_price = Column(Numeric, nullable=False, comment="Selling price during sale")
+    quantity = Column(Numeric(10, 2), nullable=False, comment="Quantity sold")
+    base_price = Column(Numeric(10, 2), nullable=False, comment="Base price during sale")
+    selling_price = Column(Numeric(10, 2), nullable=False, comment="Selling price during sale")
     last_updated = Column(DateTime(timezone=False), server_default=func.now())
     sale_date = Column(DateTime(timezone=False), server_default=func.now())
     status = Column(String, nullable=False, default='Completed', 

@@ -2,6 +2,8 @@ from typing import List
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 from app.db import getDb
+from app.dependencies.auth import get_current_user_with_role
+from app.models.user import User
 from app.schemas.sales import SalesCreate, SalesResponse, SalesUpdate
 from app.crud import sale  as crud_sales
 sales_router = APIRouter()
@@ -10,10 +12,10 @@ sales_router = APIRouter()
 @sales_router.get(
     "/",
     response_model=List[SalesResponse],
-    summary="Retrieve all sales records (Admin Or Manager only)",
+    summary="Retrieve all sales records (Admin, Manager Or Staff only)",
     status_code=200,
 )
-def get_sales(skip: int = 0, limit: int = 10, db: Session = Depends(getDb)):
+def get_sales(skip: int = 0, limit: int = 10, db: Session = Depends(getDb), current_user: User = Depends(get_current_user_with_role("admin", "manager", "staff"))):
     """
     Retrieve a list of sales records with pagination.
     """
@@ -26,7 +28,7 @@ def get_sales(skip: int = 0, limit: int = 10, db: Session = Depends(getDb)):
     summary="Retrieve a single sale record (Admin Or Manager only)",
     status_code=200,
 )
-def get_sale(id: int, db: Session = Depends(getDb)):
+def get_sale(id: int, db: Session = Depends(getDb), current_user: User = Depends(get_current_user_with_role("admin", "manager", "staff"))):
     """
     Retrieve details of a single sale record by its ID.
     """
@@ -39,7 +41,7 @@ def get_sale(id: int, db: Session = Depends(getDb)):
     summary="Record a new sale (Admin, Manager & Staff only)",
     status_code=201
 )
-def create_sale(payload: SalesCreate, db: Session = Depends(getDb)):
+def create_sale(payload: SalesCreate, db: Session = Depends(getDb), current_user: User = Depends(get_current_user_with_role("admin", "manager", "staff"))):
     """
     Record a new sale and deduct inventory stock.
     """
@@ -56,7 +58,8 @@ def create_sale(payload: SalesCreate, db: Session = Depends(getDb)):
 def update_sale(
     id: int,
     payload: SalesUpdate,
-    db: Session = Depends(getDb)
+    db: Session = Depends(getDb),
+    current_user: User = Depends(get_current_user_with_role("admin", "manager"))
     ):
     sale = crud_sales.get_sale_by_id(db, id)
     updated_sale = crud_sales.update_sale(db, sale, payload)
@@ -71,7 +74,8 @@ def update_sale(
 )
 def delete_sale(
     id: int,
-    db: Session = Depends(getDb)
+    db: Session = Depends(getDb),
+     current_user: User = Depends(get_current_user_with_role("admin"))
 ):
     sale = crud_sales.get_sale_by_id(db, id)
     crud_sales.delete_sale(db, sale)

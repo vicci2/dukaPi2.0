@@ -5,6 +5,7 @@ from pydantic import BaseModel, Field
 class FeatureBase(BaseModel):
     name: str = Field(..., example="Priority Support")
     description: str = Field(..., example="24/7 customer support.")
+    cost: int = Field(..., example=10)
 
 class FeatureCreate(FeatureBase):
     pass
@@ -19,6 +20,7 @@ class TierBase(BaseModel):
     name: str = Field(..., example="Premium")  
     description: str = Field(..., example="Access to all premium features.")  
     amount: float = Field(..., example=49.99)  
+    type: str = Field(..., example="monthly")  
 
 # Schema for creating a new tier
 class TierCreate(TierBase):    

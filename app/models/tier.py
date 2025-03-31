@@ -16,6 +16,7 @@ class Feature(Base):
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, nullable=False, unique=True)
     description = Column(String, nullable=True)
+    cost = Column(Float, nullable=False)
 
     # Many-to-Many Relationship with Tiers
     tiers = relationship("Tier", secondary=tier_features, back_populates="features")
@@ -27,7 +28,7 @@ class Tier(Base):
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, nullable=False, unique=True)
     description = Column(String, nullable=True)
-    amount = Column(Float, nullable=False)
+    amount = Column(Float, nullable=False) # sum of the feature costs
     type = Column(String, nullable=False)  #monthly or yearly
 
     # Many-to-Many Relationship with Features
@@ -36,5 +37,3 @@ class Tier(Base):
     # One-to-Many Relationship with Subscription
     subscription = relationship("Subscription", back_populates="tier")
 
-    # # Establish reverse relationship on the Feature model
-    # Feature.tiers = relationship("Tier", secondary=tier_features, back_populates="features")

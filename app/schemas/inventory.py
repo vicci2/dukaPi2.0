@@ -32,6 +32,7 @@ class InventoryResponse(BaseModel):
     serial_no: str
     date: datetime
     last_updated: datetime
+    
     class Config:
         from_attributes = True 
 
@@ -52,4 +53,4 @@ class Item(BaseModel):
     last_updated: str
 
     class Config:
-        from_attributes = True  # Ensures compatibility with SQLAlchemy models
+        from_attributes = True  

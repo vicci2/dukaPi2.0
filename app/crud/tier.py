@@ -14,7 +14,7 @@ def create_tier(db: Session, tier: TierCreate):
             feature_instances.append(existing_features[feat.name])
         else:
             # Create a new feature with description
-            new_feature = Feature(name=feat.name, description=feat.description)
+            new_feature = Feature(name=feat.name, description=feat.description, cost=feat.cost)
             db.add(new_feature)
             db.commit()
             db.refresh(new_feature)
@@ -22,10 +22,11 @@ def create_tier(db: Session, tier: TierCreate):
 
     # Create the Tier instance
     db_tier = Tier(
-        name=tier.name,
-        description=tier.description,
-        amount=tier.amount,
-        features=feature_instances  
+        name = tier.name,
+        description = tier.description,
+        amount = tier.amount,
+        type = tier.type,
+        features = feature_instances  
     )
     # db_tier = Tier(**tier.dict())
     db.add(db_tier)
@@ -33,8 +34,8 @@ def create_tier(db: Session, tier: TierCreate):
     db.refresh(db_tier)
     return db_tier
 
-def get_tiers(db: Session, skip: int = 0, limit: int = 10):
-    tiers = db.query(Tier).offset(skip).limit(limit).all()
+def get_tiers(db: Session):
+    tiers = db.query(Tier).offset(0).limit(10).all()
     if not tiers:
         raise HTTPException(status_code=404, detail="No tiers found")
     return tiers
